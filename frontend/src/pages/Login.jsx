@@ -15,18 +15,19 @@ const Login = () => {
 
   const onSubmit = async (values) => {
     setLocalError(null);
-    try {
-      await login(values.email, values.password);
-      navigate('/dashboard');
+  try {
+    const u = await login(values.email, values.password);
+    const target = u?.role === 'admin' ? '/admindashboard' : '/dashboard';
+    navigate(target);
     } catch (e) {
       setLocalError(e.response?.data?.message || 'Login failed');
     }
   };
 
-  // If user already logged in, redirect to dashboard automatically
+  // If user already logged in, redirect based on role automatically
   useEffect(() => {
     if (user) {
-      navigate('/dashboard');
+    navigate(user.role === 'admin' ? '/admindashboard' : '/dashboard');
     }
   }, [user, navigate]);
 

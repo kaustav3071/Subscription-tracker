@@ -23,7 +23,15 @@ const NavBar = () => {
         </Link>
         <div className="flex items-center gap-6">
           <ul className="hidden md:flex items-center gap-2 text-sm font-medium text-gray-600 dark:text-gray-300">
-            {[ ["/","Home"], ...(user ? [["/dashboard","Dashboard"]] : []), ["/login","Login"],["/register","Register"]].filter(r=> r[0]!=="/login"||!user).filter(r=> r[0]!=="/register"||!user).map(([to,label]) => (
+            {[
+              ["/","Home"],
+              ...(user ? [[user.role === 'admin' ? '/admindashboard' : '/dashboard', user.role === 'admin' ? 'Admin' : 'Dashboard']] : []),
+              ["/login","Login"],
+              ["/register","Register"],
+            ]
+            .filter(r=> r[0]!=="/login"||!user)
+            .filter(r=> r[0]!=="/register"||!user)
+            .map(([to,label]) => (
               <li key={to}>
                 <NavLink to={to} end={to==='/' } className={({isActive})=> {
                   const base='relative rounded-full px-4 py-2 transition';

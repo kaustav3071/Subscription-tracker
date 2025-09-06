@@ -6,6 +6,8 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
+import AdminDashboard from './pages/AdminDashboard';
+import AdminUserDetails from './pages/AdminUserDetails';
 import './App.css';
 
 function App() {
@@ -18,6 +20,8 @@ function App() {
         <Route element={<ProtectedRoute />}> 
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="profile" element={<Profile />} />
+          <Route path="admindashboard" element={<AdminDashboard />} />
+          <Route path="admin/users/:id" element={<AdminUserDetails />} />
         </Route>
       </Route>
     </Routes>
