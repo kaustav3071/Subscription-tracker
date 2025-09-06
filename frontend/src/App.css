@@ -1,42 +1,59 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+/* Modern global aesthetic helpers */
+html, body { height: 100%; }
+
+body {
+  font-feature-settings: "cv02","cv03","cv04","cv11";
+  background:
+    linear-gradient(to bottom right, #f8fafc, #f1f5f9 45%, #eef2f6),
+    radial-gradient(circle at 18% 20%, rgba(59,130,246,0.12), transparent 60%),
+    radial-gradient(circle at 82% 70%, rgba(244,114,182,0.12), transparent 65%);
+  background-attachment: fixed;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+.app-grid-overlay::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image: linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
+  background-size: 40px 40px;
+  mask-image: radial-gradient(circle at center, black 60%, transparent 100%);
+  pointer-events: none;
+  z-index: -1;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.noise-layer::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='0.65' seed='3'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='.18'/%3E%3C/svg%3E");
+  mix-blend-mode: overlay;
+  pointer-events: none;
+  z-index: -1;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+.glass-card { backdrop-filter: saturate(160%) blur(20px); background: linear-gradient(to bottom right, hsl(var(--card)/0.75), hsl(var(--card)/0.55)); }
+.glass-border { border: 1px solid hsl(var(--border)/0.5); }
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in, .animate-slide-up { animation: none !important; }
 }
 
-.card {
-  padding: 2em;
-}
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slide-up { from { transform: translateY(18px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
-.read-the-docs {
-  color: #888;
+.animate-fade-in { animation: fade-in .8s ease-out both; }
+.animate-slide-up { animation: slide-up .7s cubic-bezier(.16,.84,.44,1) both; }
+
+/* Colorful utility classes */
+.gradient-hero-bg { background: radial-gradient(circle at 20% 25%, rgba(59,130,246,0.35), transparent 60%), radial-gradient(circle at 80% 30%, rgba(236,72,153,0.28), transparent 65%), radial-gradient(circle at 50% 85%, rgba(14,165,233,0.30), transparent 60%); }
+.gradient-animated {
+  background: linear-gradient(130deg,#6366f1, #8b5cf6, #ec4899, #f59e0b,#10b981,#0ea5e9);
+  background-size: 300% 300%;
+  animation: gradientMove 14s ease-in-out infinite;
 }
+@keyframes gradientMove { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+.glow-ring { position: relative; }
+.glow-ring::before { content:""; position:absolute; inset:-1px; padding:1px; border-radius:inherit; background:linear-gradient(140deg,rgba(99,102,241,0.7),rgba(236,72,153,0.55),rgba(16,185,129,0.5)); -webkit-mask:linear-gradient(#000,#000) content-box,linear-gradient(#000,#000); -webkit-mask-composite:xor; mask-composite:exclude; pointer-events:none; opacity:.9; }
+.card-halo { position:relative; }
+.card-halo::after { content:""; position:absolute; inset:0; border-radius:inherit; background:radial-gradient(circle at 35% 25%, rgba(99,102,241,0.18), transparent 60%), radial-gradient(circle at 75% 70%, rgba(236,72,153,0.18), transparent 65%); opacity:0; transition:opacity .5s; pointer-events:none; }
+.card-halo:hover::after { opacity:1; }
