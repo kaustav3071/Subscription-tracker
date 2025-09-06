@@ -52,7 +52,15 @@ export const registerUser = async (req, res) => {
         from,
         to: user.email,
         subject: 'Verify your email',
-        html: `<p>Hi ${user.name || ''},</p><p>Please verify your email by clicking the link below:</p><p><a href="${verifyLink}">Verify Email</a></p>`,
+        html: `<!DOCTYPE html><html><body style="font-family:Arial,Helvetica,sans-serif;background:#f5f7fa;padding:0;margin:0;">
+        <div style="max-width:640px;margin:24px auto;background:#ffffff;padding:32px 40px;border-radius:12px;border:1px solid #e5e7eb;">
+        <h1 style="margin:0 0 16px;font-size:22px;color:#111827;">Confirm your email</h1>
+        <p style="line-height:1.5;font-size:14px;">Hi ${user.name || ''},</p>
+        <p style="line-height:1.5;font-size:14px;">Thanks for signing up. Please confirm your email so we can activate your account.</p>
+        <p style="margin:24px 0;"><a href="${verifyLink}" style="background:#2563eb;color:#fff;text-decoration:none;padding:12px 22px;border-radius:6px;font-weight:600;display:inline-block;">Verify Email</a></p>
+        <p style="font-size:12px;color:#6b7280;">If the button does not work, copy and paste this link:<br/><span style="word-break:break-all;">${verifyLink}</span></p>
+        <p style="font-size:12px;color:#9ca3af;margin-top:32px;">Subscription Tracker • If you didn’t create this account, ignore this email.</p>
+        </div></body></html>`
       });
     } else {
       // Fallback: log link for dev
@@ -108,8 +116,16 @@ export const resendVerification = async (req, res) => {
       await transporter.sendMail({
         from,
         to: user.email,
-        subject: 'Verify your email',
-        html: `<p>Click to verify: <a href="${verifyLink}">${verifyLink}</a></p>`,
+        subject: 'Verify your email (reminder)',
+        html: `<!DOCTYPE html><html><body style="font-family:Arial,Helvetica,sans-serif;background:#f5f7fa;padding:0;margin:0;">
+        <div style="max-width:640px;margin:24px auto;background:#ffffff;padding:32px 40px;border-radius:12px;border:1px solid #e5e7eb;">
+        <h1 style="margin:0 0 16px;font-size:22px;color:#111827;">Just one more step</h1>
+        <p style="line-height:1.5;font-size:14px;">Hi ${user.name || ''},</p>
+        <p style="line-height:1.5;font-size:14px;">Please verify your email to finish activating your account.</p>
+        <p style="margin:24px 0;"><a href="${verifyLink}" style="background:#2563eb;color:#fff;text-decoration:none;padding:12px 22px;border-radius:6px;font-weight:600;display:inline-block;">Verify Email</a></p>
+        <p style="font-size:12px;color:#6b7280;">Link (copy if needed):<br/><span style="word-break:break-all;">${verifyLink}</span></p>
+        <p style="font-size:12px;color:#9ca3af;margin-top:32px;">Subscription Tracker • If you didn’t request this, you can ignore it.</p>
+        </div></body></html>`
       });
     } else {
       console.log('Verification link:', verifyLink);
