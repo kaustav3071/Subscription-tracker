@@ -148,8 +148,5 @@ Use Postman collection guided by `RouteTesting.md`. Future: add Jest + supertest
 | Low | GraphQL layer / caching |
 | Low | Background worker (Bull / Agenda) for scalable jobs |
 
-## 18. License
-MIT (align with root project).
-
 ---
 Backend ready for extension. PRs / improvements welcome.

@@ -123,8 +123,5 @@ Each async load sets `loading`, catches `e.response?.data?.message || e.message`
 - Minimal optimistic UI for deletions (basic state removal only)
 - No central toast/alert system yet
 
-## 20. License
-MIT (match root project).
-
 ---
 Polished UI for clear subscription intelligence. Contributions / suggestions welcome.
