@@ -6,6 +6,7 @@ import dotenv from 'dotenv';
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { notifyAdminNewUser } from '../services/notification.service.js';
 
 
 dotenv.config();
@@ -61,6 +62,8 @@ export const registerUser = async (req, res) => {
   const token = user.generateAuthToken();
   const extra = process.env.NODE_ENV === 'production' ? {} : { verifyToken: rawToken };
   res.status(201).json({ token, user, ...extra });
+  // Fire-and-forget admin notification
+  notifyAdminNewUser(user).catch(() => {});
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Server error' });

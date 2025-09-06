@@ -9,12 +9,12 @@ const blacklistTokenSchema = new mongoose.Schema(
         userId: {
             type: mongoose.Schema.Types.ObjectId,
             required: true,
-            refPath: "userType", // Dynamic reference based on userType
+            ref: 'User'
         },
         createdAt: {
             type: Date,
             default: Date.now,
-            expires: "1d", // Token expires after 1 day
+            expires: '7d', // Match JWT lifetime (7 days)
         },
     },
     { timestamps: true }

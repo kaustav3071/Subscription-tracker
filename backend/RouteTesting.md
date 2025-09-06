@@ -143,3 +143,183 @@ Auth header for admin:
   - Verify MONGO_URL in .env and that MongoDB is reachable.
 - Admin access denied:
   - Ensure the logged-in user document has role: 'admin'.
+
+---
+
+## Subscription Routes (/subscriptions)
+All subscription routes require a logged-in user (JWT). Each request must include:
+- Authorization: Bearer {{user_token}}
+
+Supported fields (high level)
+- name (string, required), amount (number, required; you can also send "cost"), currency (ISO 3-letter, e.g., USD)
+- billingCycle: daily | weekly | monthly | quarterly | yearly | custom (default monthly)
+- intervalCount (number, default 1)
+- startDate (date), nextChargeDate (date; auto-computed if missing), category, tags[], url, provider, plan, description, accountEmail, paymentMethod
+
+### 1) Create a subscription
+- Method: POST
+- URL: {{base_url}}/subscriptions
+- Headers: Authorization: Bearer {{user_token}}
+- Body (raw JSON):
+{
+  "name": "Netflix",
+  "amount": 15.99,
+  "currency": "USD",
+  "billingCycle": "monthly",
+  "intervalCount": 1,
+  "category": "entertainment",
+  "provider": "Netflix",
+  "plan": "Standard",
+  "url": "https://www.netflix.com",
+  "accountEmail": "user1@example.com"
+}
+- Alternative: you may send `cost` instead of `amount` and it will be mapped automatically.
+- Success: 201 with created subscription
+
+### 2) List my subscriptions
+- Method: GET
+- URL: {{base_url}}/subscriptions
+- Optional query: `?status=active|paused|canceled`
+- Headers: Authorization: Bearer {{user_token}}
+- Success: 200 [ subscription, ... ] (only the caller's subscriptions)
+
+### 3) Get one subscription by ID
+- Method: GET
+- URL: {{base_url}}/subscriptions/{{subscriptionId}}
+- Headers: Authorization: Bearer {{user_token}}
+- Success: 200 subscription object (404 if not found or not owned by caller)
+
+### 4) Update a subscription
+- Method: PUT
+- URL: {{base_url}}/subscriptions/{{subscriptionId}}
+- Headers: Authorization: Bearer {{user_token}}
+- Body (raw JSON):
+{
+  "amount": 17.99,
+  "billingCycle": "monthly",
+  "category": "entertainment",
+  "tags": ["video", "streaming"]
+}
+- Notes: you cannot change ownership; `user`/`userId` updates are ignored.
+- Success: 200 with updated subscription (404 if not found/not owned)
+
+### 5) Delete a subscription
+- Method: DELETE
+- URL: {{base_url}}/subscriptions/{{subscriptionId}}
+- Headers: Authorization: Bearer {{user_token}}
+- Success: 200 { "success": true } (404 if not found/not owned)
+
+### Extra tips
+- nextChargeDate is auto-computed from startDate + billingCycle + intervalCount if you omit it.
+- The response includes a virtual `annualCost` to help with dashboards.
+
+---
+
+## Category Routes (/categories)
+All category endpoints require a logged-in user. You’ll receive both global default categories and your personal ones.
+
+### 1) List categories
+- Method: GET
+- URL: {{base_url}}/categories
+- Headers: Authorization: Bearer {{user_token}}
+- Success: 200 [ category, ... ]
+
+### 2) Create a category
+- Method: POST
+- URL: {{base_url}}/categories
+- Headers: Authorization: Bearer {{user_token}}
+- Body (raw JSON):
+{
+  "name": "OTT",
+  "slug": "ott",
+  "color": "#F59E0B",
+  "icon": "mdi:television-classic",
+  "description": "Streaming platforms"
+}
+- Success: 201 with created document
+
+### 3) Update a category
+- Method: PATCH
+- URL: {{base_url}}/categories/{{categoryId}}
+- Headers: Authorization: Bearer {{user_token}}
+- Body: partial fields to update
+- Success: 200 with updated document
+
+### 4) Delete a category
+- Method: DELETE
+- URL: {{base_url}}/categories/{{categoryId}}
+- Headers: Authorization: Bearer {{user_token}}
+- Note: You can only delete your own categories (not global defaults)
+- Success: 200 { success: true }
+
+### Auto-categorization
+- If you omit `category` when creating a subscription, it will be inferred using provider/name keywords.
+  - Examples that map to `ott`: Netflix, Hotstar, Prime Video, JioCinema
+  - Examples that map to `gaming`: Xbox Game Pass, PlayStation Plus
+- On update, if you change the name/provider but don’t set category, we re-run inference.
+
+---
+
+## Notifications (how to test)
+
+Two modes:
+- With SMTP configured: Real emails are sent.
+- Without SMTP: We log a line like `[mailer.disabled] { to, subject }` to the server console instead of sending.
+
+SMTP setup (optional but recommended)
+- Use a test SMTP provider like Ethereal or Mailtrap.
+- Set these in `.env` and restart the server:
+  - SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, MAIL_FROM
+  - For admin notifications also set ADMIN_EMAIL (fallback is SMTP_USER).
+
+What triggers notifications
+1) Renewal reminder (email to user)
+   - Triggered by a background scheduler that looks for subscriptions due in ~3 days (status: active, nextChargeDate between now and +3 days).
+   - Steps to test:
+     - Create a subscription with `nextChargeDate` within the next 3 days.
+       Example body for POST /subscriptions:
+       {
+         "name": "Netflix",
+         "amount": 10,
+         "currency": "USD",
+         "billingCycle": "monthly",
+         "intervalCount": 1,
+         "nextChargeDate": "<ISO date 2 days from now>"
+       }
+     - Wait for the scheduler to run (by default it runs about every 12 hours).
+     - Optional (faster for dev only): temporarily change the scheduler interval in `server.js` from 12 hours to ~30 seconds, test, then revert.
+
+2) Spending alert (email to user)
+   - Scheduler sums active subscriptions and compares to `SPEND_ALERT_THRESHOLD` (env, default 50).
+   - Steps to test:
+     - Set a low threshold in `.env`, e.g., `SPEND_ALERT_THRESHOLD=1`, and restart.
+     - Ensure you have at least one active subscription with `amount > 1`.
+     - Wait for the scheduler run (or use the temporary faster interval as above).
+
+3) Subscription updated (email to user)
+   - Immediate on successful update.
+   - Steps to test:
+     - PUT /subscriptions/{{id}} with a change, e.g., `{ "amount": 12.34 }`.
+     - Check your email (SMTP) or server logs for `[mailer.disabled]` output.
+
+4) Subscription deleted (email to user)
+   - Immediate on successful delete.
+   - Steps to test:
+     - DELETE /subscriptions/{{id}}
+     - Check your email/logs.
+
+5) Admin new user notification (email to admin)
+   - Sent on successful user registration if `ADMIN_EMAIL` or `SMTP_USER` is set.
+   - Steps to test:
+     - Set `ADMIN_EMAIL` in `.env`.
+     - Register a new user via POST /users/register.
+     - Check the admin inbox (SMTP) or logs.
+
+Troubleshooting
+- No emails arriving:
+  - Confirm SMTP_* vars are set and correct; check server console for transport errors.
+  - If not using SMTP, look for `[mailer.disabled]` lines which include `to` and `subject`.
+- Scheduler didn’t send reminders/alerts:
+  - Ensure the data matches the criteria (nextChargeDate within 3 days; status active).
+  - Lower the interval temporarily during development to avoid long waits.
+  - Confirm server time and your dates (use ISO timestamps in UTC).
