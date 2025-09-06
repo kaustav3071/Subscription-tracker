@@ -224,9 +224,6 @@ Future polishing post‑hackathon can harden validation, add test coverage, and 
 ## 18. Contributing (Post‑Hackathon)
 Suggestions & issues welcome. For now: fork, create feature branch, open PR.
 
-## 19. License
-MIT (add LICENSE file if distributing publicly).
-
 ---
 
 Made with focus, caffeine, and compressed time. 🚀
