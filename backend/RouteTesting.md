@@ -129,6 +129,14 @@ Auth header for admin:
 - Headers: Authorization: Bearer {{admin_token}}
 - Success: 200 { success: true }
 
+### 5) List a specific user's subscriptions
+- Method: GET
+- URL: {{base_url}}/admin/users/{{userId}}/subscriptions
+- Headers: Authorization: Bearer {{admin_token}}
+- Optional query params: `status`, `category`
+- Success: 200 [ subscription, ... ] (all subscriptions belonging to that user)
+- Notes: This allows admins to audit spending or troubleshoot.
+
 ---
 
 ## Troubleshooting
@@ -224,10 +232,10 @@ All category endpoints require a logged-in user. You’ll receive both global de
 - Headers: Authorization: Bearer {{user_token}}
 - Success: 200 [ category, ... ]
 
-### 2) Create a category
+### 2) Create a category (ADMIN ONLY)
 - Method: POST
 - URL: {{base_url}}/categories
-- Headers: Authorization: Bearer {{user_token}}
+- Headers: Authorization: Bearer {{admin_token}}
 - Body (raw JSON):
 {
   "name": "OTT",
@@ -238,18 +246,18 @@ All category endpoints require a logged-in user. You’ll receive both global de
 }
 - Success: 201 with created document
 
-### 3) Update a category
+### 3) Update a category (ADMIN ONLY)
 - Method: PATCH
 - URL: {{base_url}}/categories/{{categoryId}}
-- Headers: Authorization: Bearer {{user_token}}
+- Headers: Authorization: Bearer {{admin_token}}
 - Body: partial fields to update
 - Success: 200 with updated document
 
-### 4) Delete a category
+### 4) Delete a category (ADMIN ONLY for user-owned categories)
 - Method: DELETE
 - URL: {{base_url}}/categories/{{categoryId}}
-- Headers: Authorization: Bearer {{user_token}}
-- Note: You can only delete your own categories (not global defaults)
+- Headers: Authorization: Bearer {{admin_token}}
+- Note: Only user-specific categories (not global defaults) can be deleted.
 - Success: 200 { success: true }
 
 ### Auto-categorization
@@ -260,66 +268,4 @@ All category endpoints require a logged-in user. You’ll receive both global de
 
 ---
 
-## Notifications (how to test)
 
-Two modes:
-- With SMTP configured: Real emails are sent.
-- Without SMTP: We log a line like `[mailer.disabled] { to, subject }` to the server console instead of sending.
-
-SMTP setup (optional but recommended)
-- Use a test SMTP provider like Ethereal or Mailtrap.
-- Set these in `.env` and restart the server:
-  - SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, MAIL_FROM
-  - For admin notifications also set ADMIN_EMAIL (fallback is SMTP_USER).
-
-What triggers notifications
-1) Renewal reminder (email to user)
-   - Triggered by a background scheduler that looks for subscriptions due in ~3 days (status: active, nextChargeDate between now and +3 days).
-   - Steps to test:
-     - Create a subscription with `nextChargeDate` within the next 3 days.
-       Example body for POST /subscriptions:
-       {
-         "name": "Netflix",
-         "amount": 10,
-         "currency": "USD",
-         "billingCycle": "monthly",
-         "intervalCount": 1,
-         "nextChargeDate": "<ISO date 2 days from now>"
-       }
-     - Wait for the scheduler to run (by default it runs about every 12 hours).
-     - Optional (faster for dev only): temporarily change the scheduler interval in `server.js` from 12 hours to ~30 seconds, test, then revert.
-
-2) Spending alert (email to user)
-   - Scheduler sums active subscriptions and compares to `SPEND_ALERT_THRESHOLD` (env, default 50).
-   - Steps to test:
-     - Set a low threshold in `.env`, e.g., `SPEND_ALERT_THRESHOLD=1`, and restart.
-     - Ensure you have at least one active subscription with `amount > 1`.
-     - Wait for the scheduler run (or use the temporary faster interval as above).
-
-3) Subscription updated (email to user)
-   - Immediate on successful update.
-   - Steps to test:
-     - PUT /subscriptions/{{id}} with a change, e.g., `{ "amount": 12.34 }`.
-     - Check your email (SMTP) or server logs for `[mailer.disabled]` output.
-
-4) Subscription deleted (email to user)
-   - Immediate on successful delete.
-   - Steps to test:
-     - DELETE /subscriptions/{{id}}
-     - Check your email/logs.
-
-5) Admin new user notification (email to admin)
-   - Sent on successful user registration if `ADMIN_EMAIL` or `SMTP_USER` is set.
-   - Steps to test:
-     - Set `ADMIN_EMAIL` in `.env`.
-     - Register a new user via POST /users/register.
-     - Check the admin inbox (SMTP) or logs.
-
-Troubleshooting
-- No emails arriving:
-  - Confirm SMTP_* vars are set and correct; check server console for transport errors.
-  - If not using SMTP, look for `[mailer.disabled]` lines which include `to` and `subject`.
-- Scheduler didn’t send reminders/alerts:
-  - Ensure the data matches the criteria (nextChargeDate within 3 days; status active).
-  - Lower the interval temporarily during development to avoid long waits.
-  - Confirm server time and your dates (use ISO timestamps in UTC).

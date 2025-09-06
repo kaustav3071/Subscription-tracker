@@ -5,7 +5,7 @@ const { Schema } = mongoose;
 
 const CYCLES = ['daily', 'weekly', 'monthly', 'quarterly', 'yearly', 'custom'];
 const NOTIFY_CHANNELS = ['email', 'sms', 'push'];
-const PAYMENT_METHODS = ['card', 'bank', 'paypal', 'upi', 'crypto', 'other'];
+const PAYMENT_METHODS = ['card', 'bank', 'paypal', 'upi', 'crypto', 'cash', 'other'];
 
 const subscriptionSchema = new Schema(
   {
@@ -125,6 +125,35 @@ subscriptionSchema.virtual('annualCost').get(function () {
   const map = { daily: 365, weekly: 52, monthly: 12, quarterly: 4, yearly: 1, custom: 12 };
   const perYear = map[this.billingCycle] || 12;
   return (this.amount || 0) * (perYear / (this.intervalCount || 1));
+});
+
+// --- Currency conversion helpers (basic, static rates) ---
+// NOTE: For production you'd fetch live FX rates and cache them.
+// These are illustrative sample multipliers to convert FROM given currency TO INR.
+const RATES_TO_INR = {
+  INR: 1,
+  USD: 83, // approximate
+  EUR: 90,
+  GBP: 105,
+  JPY: 0.55,
+  AUD: 55,
+  CAD: 60,
+  SGD: 62,
+};
+
+function toINR(amount, currency) {
+  if (amount == null) return 0;
+  const rate = RATES_TO_INR[currency?.toUpperCase?.()] || 1; // fallback assume already INR
+  return amount * rate;
+}
+
+subscriptionSchema.virtual('amountINR').get(function () {
+  return toINR(this.amount || 0, this.currency || 'INR');
+});
+
+subscriptionSchema.virtual('annualCostINR').get(function () {
+  const baseAnnual = this.annualCost || 0;
+  return toINR(baseAnnual, this.currency || 'INR');
 });
 
 // Instance helpers

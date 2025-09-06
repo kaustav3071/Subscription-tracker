@@ -1,6 +1,7 @@
 import express from 'express';
 import { listCategories, createCategory, updateCategory, deleteCategory } from '../controllers/category.controller.js';
-import {auth} from '../middlewares/auth.js';
+import { auth } from '../middlewares/auth.js';
+import { requireAdmin } from '../middlewares/requireAdmin.js';
 
 const router = express.Router();
 
@@ -8,8 +9,9 @@ const router = express.Router();
 router.use(auth);
 
 router.get('/', listCategories);
-router.post('/', createCategory);
-router.patch('/:id', updateCategory);
-router.delete('/:id', deleteCategory);
+// Admin only mutations
+router.post('/', requireAdmin, createCategory);
+router.patch('/:id', requireAdmin, updateCategory);
+router.delete('/:id', requireAdmin, deleteCategory);
 
 export default router;
