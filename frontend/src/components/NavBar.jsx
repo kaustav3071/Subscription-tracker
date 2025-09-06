@@ -1,9 +1,10 @@
-import { Link, NavLink } from 'react-router-dom';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useEffect, useState } from 'react';
 
 const NavBar = () => {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
 
   useEffect(() => {
@@ -22,7 +23,7 @@ const NavBar = () => {
         </Link>
         <div className="flex items-center gap-6">
           <ul className="hidden md:flex items-center gap-2 text-sm font-medium text-gray-600 dark:text-gray-300">
-            {[["/","Home"],["/login","Login"],["/register","Register"]].filter(r=> r[0]!=="/login"||!user).filter(r=> r[0]!=="/register"||!user).map(([to,label]) => (
+            {[ ["/","Home"], ...(user ? [["/dashboard","Dashboard"]] : []), ["/login","Login"],["/register","Register"]].filter(r=> r[0]!=="/login"||!user).filter(r=> r[0]!=="/register"||!user).map(([to,label]) => (
               <li key={to}>
                 <NavLink to={to} end={to==='/' } className={({isActive})=> {
                   const base='relative rounded-full px-4 py-2 transition';
@@ -45,7 +46,14 @@ const NavBar = () => {
           </ul>
           {user ? (
             <div className="flex items-center gap-3">
-              <span className="hidden sm:inline text-sm text-gray-500 dark:text-gray-400">{user.email}</span>
+              <button
+                onClick={() => navigate('/profile')}
+                className="relative inline-flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-gray-900 via-gray-800 to-gray-700 text-white text-sm font-semibold ring-2 ring-gray-900/5 dark:from-brand-600 dark:via-brand-500 dark:to-brand-500 dark:ring-brand-400/30 hover:scale-[1.03] transition"
+                aria-label="View profile"
+              >
+                {user.name ? user.name.charAt(0).toUpperCase() : user.email.charAt(0).toUpperCase()}
+              </button>
+              <span className="hidden sm:inline text-sm text-gray-500 dark:text-gray-400 max-w-[160px] truncate">{user.email}</span>
               <button onClick={logout} className="md:hidden rounded-lg border px-3 py-1.5 text-sm font-medium border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800">Logout</button>
               <button onClick={toggleTheme} className="md:hidden rounded-lg border px-3 py-1.5 text-sm font-medium border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800">{theme==='dark'?'Light':'Dark'}</button>
             </div>

@@ -1,5 +1,5 @@
 import { useForm } from 'react-hook-form';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '../components/ui/button';
@@ -9,7 +9,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../co
 
 const Login = () => {
   const { register: formRegister, handleSubmit } = useForm();
-  const { login, error, loading } = useAuth();
+  const { login, error, loading, user } = useAuth();
   const [localError, setLocalError] = useState(null);
   const navigate = useNavigate();
 
@@ -17,11 +17,18 @@ const Login = () => {
     setLocalError(null);
     try {
       await login(values.email, values.password);
-      navigate('/');
+      navigate('/dashboard');
     } catch (e) {
       setLocalError(e.response?.data?.message || 'Login failed');
     }
   };
+
+  // If user already logged in, redirect to dashboard automatically
+  useEffect(() => {
+    if (user) {
+      navigate('/dashboard');
+    }
+  }, [user, navigate]);
 
   return (
     <div className="relative mx-auto flex min-h-[78vh] w-full max-w-6xl flex-col justify-center gap-12 px-4 py-10 md:flex-row md:items-stretch md:py-20">
