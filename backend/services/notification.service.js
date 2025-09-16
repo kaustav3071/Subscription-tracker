@@ -119,3 +119,22 @@ export async function notifyAdminNewUser(user) {
   const html = layout({ title: 'New User Registered', body });
   return sendMail({ to, subject, html });
 }
+
+export async function notifyAdminSupportMessage(user, message) {
+  const to = process.env.ADMIN_EMAIL || 'kdas.portfolio@gmail.com' || process.env.SMTP_USER;
+  const subject = `Support: ${user.name || user.email}`;
+  const safeMsg = (String(message || '')).slice(0, 5000);
+  const body = `
+    <p><strong>New support request</strong></p>
+    <table class="meta-table">
+      <tr><th>Name</th><td>${user.name || '—'}</td></tr>
+      <tr><th>Email</th><td>${user.email}</td></tr>
+      <tr><th>When</th><td>${new Date().toLocaleString()}</td></tr>
+    </table>
+    <p style="margin-top:12px;">Message:</p>
+    <div style="white-space:pre-wrap;border:1px solid #e5e7eb;background:#f9fafb;padding:12px;border-radius:8px;">${safeMsg}</div>
+  `;
+  const html = layout({ title: 'Support Message', body });
+  return sendMail({ to, subject, html, text: `From: ${user.name || ''} <${user.email}>
+${safeMsg}` });
+}

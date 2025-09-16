@@ -1,4 +1,4 @@
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
 import Home from './pages/Home';
@@ -15,15 +15,52 @@ import CategoryCreate from './pages/CategoryCreate';
 import CategoryEdit from './pages/CategoryEdit';
 import AdminUserDetails from './pages/AdminUserDetails';
 import AdminUserSubscriptions from './pages/AdminUserSubscriptions';
+import Support from './pages/Support';
+import AdminSupport from './pages/AdminSupport';
+import { useAuth } from './context/AuthContext';
 import './App.css';
 
-function App() {
+function PrivateRoute({ children }) {
+  const { user, loading } = useAuth();
+  if (loading) return <div className="py-20 text-center text-sm text-gray-500">Loading...</div>;
+  return user ? children : <Navigate to="/login" replace />;
+}
+
+function AdminRoute({ children }) {
+  const { user, loading } = useAuth();
+  if (loading) return <div className="py-20 text-center text-sm text-gray-500">Loading...</div>;
+  return user?.role === 'admin' ? children : <Navigate to="/" replace />;
+}
+
+export default function App() {
   return (
     <Routes>
       <Route element={<Layout />}> 
-        <Route index element={<Home />} />
-        <Route path="login" element={<Login />} />
-        <Route path="register" element={<Register />} />
+        <Route path="/" element={<Home />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+
+        {/* Auth-specific routes */}
+        <Route
+          path="/support"
+          element={
+            <PrivateRoute>
+              <Support />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/support"
+          element={
+            <PrivateRoute>
+              <AdminRoute>
+                <AdminSupport />
+              </AdminRoute>
+            </PrivateRoute>
+          }
+        />
+
+        {/* Protected nested routes */}
         <Route element={<ProtectedRoute />}> 
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="profile" element={<Profile />} />
@@ -41,5 +78,3 @@ function App() {
     </Routes>
   );
 }
-
-export default App;

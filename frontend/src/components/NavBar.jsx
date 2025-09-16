@@ -27,7 +27,8 @@ const NavBar = () => {
               ["/","Home"],
               ...(user ? [[user.role === 'admin' ? '/admindashboard' : '/dashboard', user.role === 'admin' ? 'Admin' : 'Dashboard']] : []),
               ...(user ? [["/subscriptions","Subscriptions"]] : []),
-              ...(user && user.role==='admin' ? [["/categories","Categories"]] : []),
+              ...(user && user.role !== 'admin' ? [["/support","Support"]] : []),
+              ...(user && user.role==='admin' ? [["/admin/support","Admin Inbox"],["/categories","Categories"]] : []),
               ["/login","Login"],
               ["/register","Register"],
             ]

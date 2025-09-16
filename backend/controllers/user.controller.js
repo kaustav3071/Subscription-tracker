@@ -6,7 +6,8 @@ import dotenv from 'dotenv';
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { notifyAdminNewUser } from '../services/notification.service.js';
+import { notifyAdminNewUser, notifyAdminSupportMessage } from '../services/notification.service.js';
+import SupportTicket from '../models/supportTicket.model.js';
 
 
 dotenv.config();
@@ -187,6 +188,28 @@ export const getMe = async (req, res) => {
     const user = await UserModel.findById(targetId);
     if (!user) return res.status(404).json({ message: 'User not found' });
     res.json(user);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const sendSupportMessage = async (req, res) => {
+  try {
+    const authId = req.user?.id;
+    if (!authId) return res.status(401).json({ message: 'Unauthorized' });
+    const user = await UserModel.findById(authId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    const { message } = req.body || {};
+    if (!message || String(message).trim().length === 0) {
+      return res.status(400).json({ message: 'Message is required' });
+    }
+    const msg = String(message).trim();
+    // persist ticket
+    const ticket = await SupportTicket.create({ userId: user._id, name: user.name || '', email: user.email, message: msg });
+    // email admin (best-effort)
+    await notifyAdminSupportMessage(user, msg).catch(()=>{});
+    res.json({ success: true, ticketId: ticket._id });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Server error' });

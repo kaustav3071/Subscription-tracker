@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { asyncHandler } from '../middlewares/asyncHandler.js';
-import { registerUser, loginUser, logoutUser, verifyEmail, resendVerification, getMe } from '../controllers/user.controller.js';
+import { registerUser, loginUser, logoutUser, verifyEmail, resendVerification, getMe, sendSupportMessage } from '../controllers/user.controller.js';
 import { auth } from '../middlewares/auth.js';
 
 const router = Router();
@@ -12,5 +12,6 @@ router.get('/me', auth, asyncHandler(getMe));
 router.get('/me/:id', auth, asyncHandler(getMe));
 router.get('/verify-email', asyncHandler(verifyEmail));
 router.post('/resend-verification', asyncHandler(resendVerification));
+router.post('/support', auth, asyncHandler(sendSupportMessage));
 
 export default router;

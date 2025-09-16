@@ -1,5 +1,6 @@
 import User from '../models/User.model.js';
 import Subscription from '../models/subscription.model.js';
+import SupportTicket from '../models/supportTicket.model.js';
 
 export async function listUsers(req, res) {
   const users = await User.find({}).sort({ createdAt: -1 });
@@ -48,4 +49,19 @@ export async function listAllSubscriptions(req, res) {
     .populate('user', 'email name')
     .sort({ nextChargeDate: 1 });
   res.json(subs);
+}
+
+export async function listSupportTickets(req, res) {
+  const { status } = req.query;
+  const filter = {};
+  if (status) filter.status = status;
+  const tickets = await SupportTicket.find(filter).sort({ createdAt: -1 });
+  res.json(tickets);
+}
+
+export async function resolveSupportTicket(req, res) {
+  const { id } = req.params;
+  const ticket = await SupportTicket.findByIdAndUpdate(id, { $set: { status: 'resolved' } }, { new: true });
+  if (!ticket) return res.status(404).json({ message: 'Ticket not found' });
+  res.json(ticket);
 }
