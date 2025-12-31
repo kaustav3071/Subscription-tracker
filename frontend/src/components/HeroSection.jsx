@@ -11,7 +11,7 @@ const HeroSection = () => {
         <div className="absolute left-1/2 top-1/2 h-[900px] w-[900px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/10 blur-3xl mix-blend-overlay dark:mix-blend-normal" />
       </div>
       <div className="mx-auto flex max-w-6xl flex-col items-center px-6 py-24 text-center md:py-32 animate-fade-in">
-        <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl bg-gradient-to-r from-indigo-600 via-fuchsia-500 to-emerald-500 bg-clip-text text-transparent drop-shadow-sm dark:from-indigo-400 dark:via-fuchsia-400 dark:to-emerald-400">
+        <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl bg-gradient-to-r from-indigo-600 via-fuchsia-500 to-emerald-500 bg-clip-text text-transparent drop-shadow-sm dark:from-indigo-400 dark:via-fuchsia-400 dark:to-emerald-400 leading-tight pb-2">
           Take control of your <span className="underline decoration-white/40 dark:decoration-transparent">recurring spend</span>
         </h1>
         <p className="mt-6 max-w-2xl text-lg leading-relaxed text-gray-600 dark:text-gray-300 animate-slide-up [animation-delay:.15s]">
