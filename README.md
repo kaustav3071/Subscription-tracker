@@ -1,6 +1,6 @@
 <div align="center">
 
-# 💰 Subscription Tracker Dashboard
+# 💰 SubTrack - Subscription Tracker Dashboard
 
 ### *Your Financial Command Center for Recurring Payments*
 
