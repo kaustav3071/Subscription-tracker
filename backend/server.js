@@ -18,7 +18,9 @@ dotenv.config();
 
 const app = express();
 
-// Custom NoSQL injection sanitizer (compatible with Express 5)
+app.set('trust proxy', 1);
+
+
 function sanitizeObject(obj) {
 	if (obj === null || typeof obj !== 'object') return obj;
 	for (const key of Object.keys(obj)) {
