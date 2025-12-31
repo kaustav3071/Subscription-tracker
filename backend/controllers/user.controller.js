@@ -41,8 +41,14 @@ export const registerUser = async (req, res) => {
 
     const rawToken = crypto.randomBytes(32).toString('hex');
     const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
-
-    const user = await UserModel.create({ email, password, name, phone, emailVerificationToken: tokenHash });
+    const user = await UserModel.create({ 
+      email, 
+      password, 
+      name, 
+      phone, 
+      emailVerificationToken: tokenHash,
+      role: 'user'
+    });
 
     const verifyLink = buildVerifyLink(rawToken);
     const transporter = getTransport();

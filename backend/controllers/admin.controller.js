@@ -24,6 +24,28 @@ export async function updateUser(req, res) {
   res.json(user);
 }
 
+export async function updateUserRole(req, res) {
+  const { role } = req.body;
+  
+
+  if (!role || !['user', 'admin'].includes(role)) {
+    return res.status(400).json({ message: 'Invalid role. Must be "user" or "admin"' });
+  }
+  
+  if (req.user.id === req.params.id && role === 'user') {
+    return res.status(403).json({ message: 'Cannot demote yourself from admin' });
+  }
+  
+  const user = await User.findByIdAndUpdate(
+    req.params.id,
+    { $set: { role } },
+    { new: true, runValidators: true }
+  );
+  
+  if (!user) return res.status(404).json({ message: 'User not found' });
+  res.json(user);
+}
+
 export async function deleteUser(req, res) {
   const user = await User.findByIdAndDelete(req.params.id);
   if (!user) return res.status(404).json({ message: 'User not found' });
@@ -40,7 +62,7 @@ export async function listUserSubscriptions(req, res) {
   res.json(subs);
 }
 
-// List ALL subscriptions across users (admin overview)
+
 export async function listAllSubscriptions(req, res) {
   const filter = {};
   if (req.query.status) filter.status = req.query.status;
@@ -121,8 +143,7 @@ export async function replySupportTicket(req, res) {
       <p style="font-size:12px;color:#9ca3af;margin-top:32px;">Subscription Tracker Support • If you have more questions, feel free to reply to this email.</p>
       </div></body></html>`
     });
-    
-    // Save reply to database
+
     ticket.replies.push({
       sender: 'admin',
       message: String(reply).trim(),

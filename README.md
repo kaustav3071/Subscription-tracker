@@ -337,13 +337,16 @@ DELETE /categories/:id          # Delete category (admin)
 ```http
 GET    /admin/users             # List all users
 GET    /admin/users/:id         # Get user details
-PUT    /admin/users/:id         # Update user
+PUT    /admin/users/:id         # Update user (name, phone, verification)
+PATCH  /admin/users/:id/role    # Update user role (ADMIN ONLY - cannot self-demote)
 DELETE /admin/users/:id         # Delete user
 GET    /admin/users/:id/subscriptions
 GET    /admin/subscriptions     # Global subscription view
 GET    /admin/support           # Support tickets
 POST   /admin/support/:id/reply # Reply to ticket
 ```
+
+**⚠️ Security Note:** The role update endpoint (`PATCH /admin/users/:id/role`) is the ONLY way to change user roles. Regular users cannot promote themselves to admin, even via API manipulation.
 
 ---
 
@@ -359,6 +362,45 @@ POST   /admin/support/:id/reply # Reply to ticket
 | 🚦 **Rate Limiting** | Express-rate-limit on auth routes |
 | 🔐 **NoSQL Injection Protection** | Custom sanitization middleware |
 | 🎭 **Security Headers** | Helmet.js integration |
+| 👑 **Role Protection** | Users cannot self-promote to admin |
+
+### 🛡️ Role & Privilege Security
+
+**Critical Security Measures:**
+
+1. **Registration Protection**
+   - All new users are forcibly assigned `role: 'user'`
+   - Client cannot specify role during signup
+   - Even if attacker sends `role: 'admin'` in request body, it's ignored
+
+2. **Role Modification**
+   - Regular users **cannot** change their own or others' roles
+   - Only authenticated admins can modify user roles
+   - Dedicated endpoint: `PATCH /admin/users/:id/role` (admin-only)
+   - Self-demotion protection: Admins cannot remove their own admin role
+
+3. **Admin Creation**
+   - Initial admin created via secure server-side script: `node scripts/createAdmin.js`
+   - Additional admins promoted only by existing admins via API
+   - No public registration path to admin role
+
+**API Security Example:**
+```javascript
+// ❌ This will NOT work - role is ignored
+POST /users/register
+{
+  "email": "attacker@evil.com",
+  "password": "password123",
+  "role": "admin"  // Ignored! User will be created with role: 'user'
+}
+
+// ✅ Only this works (admin-only endpoint)
+PATCH /admin/users/USER_ID/role
+Authorization: Bearer ADMIN_JWT_TOKEN
+{
+  "role": "admin"  // Requires admin authentication
+}
+```
 
 ---
 
