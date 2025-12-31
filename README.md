@@ -16,7 +16,7 @@
 
 ---
 
-![Dashboard Preview](https://via.placeholder.com/900x500/6366F1/FFFFFF?text=📊+Beautiful+Dashboard+•+Real-time+Analytics+•+Smart+Insights)
+![Dashboard Preview](./images/dashboard.png)
 
 </div>
 
@@ -241,7 +241,8 @@ node scripts/createAdmin.js
 <div align="center">
 
 ### 📊 Dashboard Overview
-![Dashboard](https://via.placeholder.com/800x450/6366F1/FFFFFF?text=Dashboard+•+KPIs+•+Charts+•+Insights)
+![Dashboard](./images/dashboard1.png)
+![Dashboard](./images//dashboard2.png)
 
 ### 💳 Subscription Management
 ![Subscriptions](https://via.placeholder.com/800x450/EC4899/FFFFFF?text=Manage+Subscriptions+•+Filter+•+Search)
@@ -481,7 +482,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 **Kaustav Das**
 
 - GitHub: [@kaustav3071](https://github.com/kaustav3071)
-- Email: kdas.portfolio@gmail.com
+- Email: kaustadas2027@gmail.com
 
 ---
 
