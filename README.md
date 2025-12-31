@@ -12,6 +12,8 @@
 
 **Stop letting subscriptions drain your wallet.** Track, analyze, and optimize every recurring charge in one beautiful dashboard.
 
+🌐 **[Live Demo](https://thesubtrack.netlify.app)** 
+
 [✨ Features](#-core-features) • [🚀 Quick Start](#-quick-start) • [🛠️ Tech Stack](#️-tech-stack) • [📸 Screenshots](#-screenshots)
 
 ---
