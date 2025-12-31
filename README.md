@@ -29,10 +29,10 @@ In today's subscription economy, the average person manages **20+ recurring char
 - 💸 **Hidden spend creep** — "small" monthly fees silently stack to thousands annually
 - 📅 **Renewal surprises** — no central calendar means unexpected charges hit your account
 - 📊 **Zero visibility** — scattered spreadsheets that are outdated the moment you create them  
-- 🌍 **Currency confusion** — comparing $9.99, ₹799, and €7.49 subscriptions? Good luck.
+- 🌍 **Currency confusion** — comparing Rs499, $9.99, ₹799, and €7.49 subscriptions? Good luck.
 - 🔕 **No alerts** — miss a cancellation window and you're charged for another year
 
-> *"I thought I was spending $50/month on subscriptions. Turns out it was $247."* — Every user ever
+> *"I thought I was spending Rs500/month on subscriptions. Turns out it was Rs2470."* — Every user ever
 
 ---
 
