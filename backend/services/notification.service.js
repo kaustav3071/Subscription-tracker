@@ -121,7 +121,7 @@ export async function notifyAdminNewUser(user) {
 }
 
 export async function notifyAdminSupportMessage(user, message) {
-  const to = process.env.ADMIN_EMAIL || 'kdas.portfolio@gmail.com' || process.env.SMTP_USER;
+  const to = process.env.ADMIN_EMAIL || process.env.SMTP_USER || 'kdas.portfolio@gmail.com';
   const subject = `Support: ${user.name || user.email}`;
   const safeMsg = (String(message || '')).slice(0, 5000);
   const body = `

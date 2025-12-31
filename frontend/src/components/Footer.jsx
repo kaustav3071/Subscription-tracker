@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom';
+
 const Footer = () => {
   const year = new Date().getFullYear();
   return (
@@ -10,25 +12,24 @@ const Footer = () => {
         <div>
           <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Product</h4>
           <ul className="mt-3 space-y-2 text-xs text-gray-600 dark:text-gray-400">
-            <li><a className="hover:text-gray-900 dark:hover:text-gray-200" href="#">Features</a></li>
-            <li><a className="hover:text-gray-900 dark:hover:text-gray-200" href="#">Pricing</a></li>
-            <li><a className="hover:text-gray-900 dark:hover:text-gray-200" href="#">Changelog</a></li>
+            <li><Link className="hover:text-gray-900 dark:hover:text-gray-200" to="/features">Features</Link></li>
+            <li><Link className="hover:text-gray-900 dark:hover:text-gray-200" to="/changelog">Changelog</Link></li>
           </ul>
         </div>
         <div>
           <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Resources</h4>
           <ul className="mt-3 space-y-2 text-xs text-gray-600 dark:text-gray-400">
-            <li><a className="hover:text-gray-900 dark:hover:text-gray-200" href="#">Docs</a></li>
-            <li><a className="hover:text-gray-900 dark:hover:text-gray-200" href="#">Support</a></li>
-            <li><a className="hover:text-gray-900 dark:hover:text-gray-200" href="https://github.com" target="_blank">GitHub</a></li>
+            <li><Link className="hover:text-gray-900 dark:hover:text-gray-200" to="/docs">Docs</Link></li>
+            <li><Link className="hover:text-gray-900 dark:hover:text-gray-200" to="/support">Support</Link></li>
+            <li><a className="hover:text-gray-900 dark:hover:text-gray-200" href="https://github.com/kaustav3071" target="_blank" rel="noopener noreferrer">GitHub</a></li>
           </ul>
         </div>
         <div>
           <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Legal</h4>
           <ul className="mt-3 space-y-2 text-xs text-gray-600 dark:text-gray-400">
-            <li><a className="hover:text-gray-900 dark:hover:text-gray-200" href="#">Privacy</a></li>
-            <li><a className="hover:text-gray-900 dark:hover:text-gray-200" href="#">Terms</a></li>
-            <li><a className="hover:text-gray-900 dark:hover:text-gray-200" href="#">Security</a></li>
+            <li><Link className="hover:text-gray-900 dark:hover:text-gray-200" to="/privacy">Privacy</Link></li>
+            <li><Link className="hover:text-gray-900 dark:hover:text-gray-200" to="/terms">Terms</Link></li>
+            <li><Link className="hover:text-gray-900 dark:hover:text-gray-200" to="/security">Security</Link></li>
           </ul>
         </div>
       </div>

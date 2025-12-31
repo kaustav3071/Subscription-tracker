@@ -17,6 +17,13 @@ import AdminUserDetails from './pages/AdminUserDetails';
 import AdminUserSubscriptions from './pages/AdminUserSubscriptions';
 import Support from './pages/Support';
 import AdminSupport from './pages/AdminSupport';
+import UserSupport from './pages/UserSupport';
+import Features from './pages/Features';
+import Changelog from './pages/Changelog';
+import Docs from './pages/Docs';
+import Privacy from './pages/Privacy';
+import Terms from './pages/Terms';
+import Security from './pages/Security';
 import { useAuth } from './context/AuthContext';
 import './App.css';
 
@@ -39,6 +46,14 @@ export default function App() {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        
+        {/* Public pages */}
+        <Route path="/features" element={<Features />} />
+        <Route path="/changelog" element={<Changelog />} />
+        <Route path="/docs" element={<Docs />} />
+        <Route path="/privacy" element={<Privacy />} />
+        <Route path="/terms" element={<Terms />} />
+        <Route path="/security" element={<Security />} />
 
         {/* Auth-specific routes */}
         <Route
@@ -46,6 +61,14 @@ export default function App() {
           element={
             <PrivateRoute>
               <Support />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/my-tickets"
+          element={
+            <PrivateRoute>
+              <UserSupport />
             </PrivateRoute>
           }
         />

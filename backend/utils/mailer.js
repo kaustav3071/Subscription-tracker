@@ -1,13 +1,13 @@
 import nodemailer from 'nodemailer';
 
 export function getTransport() {
-  const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS } = process.env;
-  if (!SMTP_HOST || !SMTP_PORT || !SMTP_USER || !SMTP_PASS) return null;
+  const { MAIL_HOST, MAIL_PORT, MAIL_USER, MAIL_PASS } = process.env;
+  if (!MAIL_HOST || !MAIL_PORT || !MAIL_USER || !MAIL_PASS) return null;
   return nodemailer.createTransport({
-    host: SMTP_HOST,
-    port: Number(SMTP_PORT),
-    secure: Number(SMTP_PORT) === 465,
-    auth: { user: SMTP_USER, pass: SMTP_PASS },
+    host: MAIL_HOST,
+    port: Number(MAIL_PORT),
+    secure: Number(MAIL_PORT) === 465,
+    auth: { user: MAIL_USER, pass: MAIL_PASS },
   });
 }
 

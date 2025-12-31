@@ -19,7 +19,6 @@ const userSchema = new mongoose.Schema(
       minlength: [8, "Password must be at least 8 characters"],
       select: false,
     },
-    // For compatibility with controllers that send `passwordHash`
     passwordHash: {
       type: String,
       select: false,
@@ -53,6 +52,15 @@ const userSchema = new mongoose.Schema(
     },
     emailVerificationToken: {
       type: String,
+    },
+    // Notification preferences
+    notifications: {
+      renewalReminders: { type: Boolean, default: true },
+      spendingAlerts: { type: Boolean, default: true },
+      reminderDaysBefore: { type: Number, default: 3, min: 1, max: 30 },
+      spendingThreshold: { type: Number, default: 5000, min: 0 },
+      currency: { type: String, default: 'INR', uppercase: true },
+      lastSpendingAlertSent: { type: Date }, // Tracks when last spending alert was sent
     },
   },
   {

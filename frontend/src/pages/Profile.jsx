@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import api from '../services/api';
+import api, { getNotificationPreferences, updateNotificationPreferences } from '../services/api';
 import subscriptionApi from '../services/subscriptionApi';
 import { useAuth } from '../context/AuthContext';
 
@@ -10,6 +10,18 @@ const Profile = () => {
   const [error, setError] = useState(null);
   const [subs, setSubs] = useState([]);
   const [subsLoading, setSubsLoading] = useState(true);
+  
+  // Notification preferences state
+  const [notifPrefs, setNotifPrefs] = useState({
+    renewalReminders: true,
+    spendingAlerts: true,
+    reminderDaysBefore: 3,
+    spendingThreshold: 5000,
+    currency: 'INR'
+  });
+  const [notifLoading, setNotifLoading] = useState(true);
+  const [notifSaving, setNotifSaving] = useState(false);
+  const [notifSuccess, setNotifSuccess] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -35,6 +47,40 @@ const Profile = () => {
       .finally(()=> { if (alive) setSubsLoading(false); });
     return ()=> { alive=false; };
   }, []);
+
+  // Load notification preferences
+  useEffect(() => {
+    let alive = true;
+    setNotifLoading(true);
+    getNotificationPreferences()
+      .then(prefs => {
+        if (alive && prefs) {
+          setNotifPrefs(prev => ({ ...prev, ...prefs }));
+        }
+      })
+      .catch(() => {})
+      .finally(() => { if (alive) setNotifLoading(false); });
+    return () => { alive = false; };
+  }, []);
+
+  const handleNotifChange = (field, value) => {
+    setNotifPrefs(prev => ({ ...prev, [field]: value }));
+    setNotifSuccess(false);
+  };
+
+  const saveNotifPrefs = async () => {
+    setNotifSaving(true);
+    setNotifSuccess(false);
+    try {
+      await updateNotificationPreferences(notifPrefs);
+      setNotifSuccess(true);
+      setTimeout(() => setNotifSuccess(false), 3000);
+    } catch (e) {
+      console.error('Failed to save notification preferences:', e);
+    } finally {
+      setNotifSaving(false);
+    }
+  };
 
   const stats = useMemo(()=> {
     const total = subs.length;
@@ -84,8 +130,147 @@ const Profile = () => {
                 <Item label="Created" value={new Date(profile.createdAt).toLocaleDateString()} />
               </dl>
             </Section>
-           
-          </div>
+
+            {/* Notification Settings Section */}
+            {user.role !== 'admin' && (
+            <Section title="Notification Settings">
+              {notifLoading ? (
+                <p className="text-sm text-gray-500 dark:text-gray-400">Loading preferences…</p>
+              ) : (
+                <div className="space-y-6">
+                  {/* Renewal Reminders Toggle */}
+                  <div className="flex items-center justify-between rounded-xl border border-gray-200/60 bg-gradient-to-r from-indigo-50/50 to-white p-4 dark:border-gray-700/60 dark:from-indigo-900/20 dark:to-gray-800/40">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-100 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400">
+                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                        </svg>
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Renewal Reminders</h3>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Get notified before your subscriptions renew</p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleNotifChange('renewalReminders', !notifPrefs.renewalReminders)}
+                      className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2 ${notifPrefs.renewalReminders ? 'bg-indigo-600' : 'bg-gray-200 dark:bg-gray-700'}`}
+                    >
+                      <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${notifPrefs.renewalReminders ? 'translate-x-5' : 'translate-x-0'}`} />
+                    </button>
+                  </div>
+
+                  {/* Days Before Input */}
+                  {notifPrefs.renewalReminders && (
+                    <div className="ml-4 rounded-lg border border-gray-200/60 bg-white/60 p-4 dark:border-gray-700/60 dark:bg-gray-800/40">
+                      <label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                        Remind me this many days before
+                      </label>
+                      <div className="mt-2 flex items-center gap-3">
+                        <input
+                          type="number"
+                          min="1"
+                          max="30"
+                          value={notifPrefs.reminderDaysBefore}
+                          onChange={(e) => handleNotifChange('reminderDaysBefore', Math.max(1, Math.min(30, parseInt(e.target.value) || 3)))}
+                          className="w-20 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+                        />
+                        <span className="text-sm text-gray-600 dark:text-gray-400">days</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Spending Alerts Toggle */}
+                  <div className="flex items-center justify-between rounded-xl border border-gray-200/60 bg-gradient-to-r from-pink-50/50 to-white p-4 dark:border-gray-700/60 dark:from-pink-900/20 dark:to-gray-800/40">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-pink-100 text-pink-600 dark:bg-pink-500/20 dark:text-pink-400">
+                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Spending Alerts</h3>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Get alerted when spending exceeds your budget</p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleNotifChange('spendingAlerts', !notifPrefs.spendingAlerts)}
+                      className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-pink-600 focus:ring-offset-2 ${notifPrefs.spendingAlerts ? 'bg-pink-600' : 'bg-gray-200 dark:bg-gray-700'}`}
+                    >
+                      <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${notifPrefs.spendingAlerts ? 'translate-x-5' : 'translate-x-0'}`} />
+                    </button>
+                  </div>
+
+                  {/* Spending Threshold Input */}
+                  {notifPrefs.spendingAlerts && (
+                    <div className="ml-4 rounded-lg border border-gray-200/60 bg-white/60 p-4 dark:border-gray-700/60 dark:bg-gray-800/40">
+                      <label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                        Alert me when total spending exceeds
+                      </label>
+                      <div className="mt-2 flex items-center gap-3">
+                        <select
+                          value={notifPrefs.currency}
+                          onChange={(e) => handleNotifChange('currency', e.target.value)}
+                          className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-900 focus:border-pink-500 focus:ring-2 focus:ring-pink-500/20 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+                        >
+                          <option value="INR">₹ INR</option>
+                          <option value="USD">$ USD</option>
+                          <option value="EUR">€ EUR</option>
+                          <option value="GBP">£ GBP</option>
+                        </select>
+                        <input
+                          type="number"
+                          min="0"
+                          step="100"
+                          value={notifPrefs.spendingThreshold}
+                          onChange={(e) => handleNotifChange('spendingThreshold', Math.max(0, parseInt(e.target.value) || 0))}
+                          className="w-28 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-900 focus:border-pink-500 focus:ring-2 focus:ring-pink-500/20 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+                        />
+                        <span className="text-sm text-gray-600 dark:text-gray-400">per month</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Save Button */}
+                  <div className="flex items-center gap-4 pt-2">
+                    <button
+                      type="button"
+                      onClick={saveNotifPrefs}
+                      disabled={notifSaving}
+                      className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-fuchsia-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 transition hover:from-indigo-500 hover:to-fuchsia-500 hover:shadow-xl disabled:opacity-50"
+                    >
+                      {notifSaving ? (
+                        <>
+                          <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                          </svg>
+                          Saving…
+                        </>
+                      ) : (
+                        <>
+                          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          Save Preferences
+                        </>
+                      )}
+                    </button>
+                    {notifSuccess && (
+                      <span className="flex items-center gap-1.5 text-sm font-medium text-emerald-600 dark:text-emerald-400">
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Saved successfully!
+                      </span>
+                    )}
+                  </div>
+      </div>
+    )}
+  </Section>
+  )}
+</div>
           <div className="space-y-8">
             <Section title="Quick Insights">
               <ul className="space-y-3 text-sm">

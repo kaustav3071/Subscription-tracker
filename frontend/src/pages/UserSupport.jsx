@@ -1,31 +1,26 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { listSupport, resolveSupport, replySupport, getSupportHistory } from '../services/adminApi';
+import { listUserSupport, resolveUserSupport, getUserSupportHistory } from '../services/api';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
-export default function AdminSupport(){
-  useDocumentTitle('Admin Support');
+export default function UserSupport(){
+  useDocumentTitle('My Support Tickets');
   const { user } = useAuth();
   const navigate = useNavigate();
   const [tickets, setTickets] = useState([]);
   const [status, setStatus] = useState('open');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [replyingTo, setReplyingTo] = useState(null);
-  const [replyText, setReplyText] = useState('');
-  const [sending, setSending] = useState(false);
   const [viewingHistory, setViewingHistory] = useState(null);
   const [historyData, setHistoryData] = useState(null);
   const [loadingHistory, setLoadingHistory] = useState(false);
-
-  useEffect(()=> { if (user && user.role !== 'admin') navigate('/dashboard'); }, [user, navigate]);
 
   useEffect(()=> {
     let mounted = true;
     setLoading(true);
     setError('');
-    listSupport({ status: status === 'all' ? undefined : status })
+    listUserSupport({ status: status === 'all' ? undefined : status })
       .then(d => { if (mounted) setTickets(d); })
       .catch(e => { if (mounted) setError(e.response?.data?.message || e.message); })
       .finally(()=> { if (mounted) setLoading(false); });
@@ -39,28 +34,10 @@ export default function AdminSupport(){
 
   const markResolved = async (id) => {
     try {
-      const updated = await resolveSupport(id);
+      const updated = await resolveUserSupport(id);
       setTickets(prev => prev.map(t => t._id === id ? updated : t));
     } catch (e) {
       setError(e.response?.data?.message || e.message);
-    }
-  };
-
-  const handleReply = async (id) => {
-    if (!replyText.trim()) {
-      setError('Reply message cannot be empty');
-      return;
-    }
-    setSending(true);
-    setError('');
-    try {
-      await replySupport(id, replyText);
-      setReplyingTo(null);
-      setReplyText('');
-    } catch (e) {
-      setError(e.response?.data?.message || e.message);
-    } finally {
-      setSending(false);
     }
   };
 
@@ -69,7 +46,7 @@ export default function AdminSupport(){
     setLoadingHistory(true);
     setError('');
     try {
-      const data = await getSupportHistory(id);
+      const data = await getUserSupportHistory(id);
       setHistoryData(data);
     } catch (e) {
       setError(e.response?.data?.message || e.message);
@@ -82,8 +59,8 @@ export default function AdminSupport(){
     <div className="mx-auto max-w-6xl px-4 py-10">
       <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-indigo-600 via-fuchsia-600 to-pink-600 bg-clip-text text-transparent">Support Inbox</h1>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Messages from users</p>
+          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-indigo-600 via-fuchsia-600 to-pink-600 bg-clip-text text-transparent">My Support Tickets</h1>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Track your support requests</p>
         </div>
         <div className="flex items-center gap-2 rounded-full bg-gray-100/70 px-1 py-1 text-xs dark:bg-gray-800/60">
           {['open','resolved','all'].map(s => (
@@ -94,7 +71,7 @@ export default function AdminSupport(){
 
       <div className="rounded-2xl border border-gray-200/80 bg-white/70 shadow-lg ring-1 ring-white/50 backdrop-blur dark:border-gray-800/70 dark:bg-gray-900/60">
         <div className="flex items-center justify-between border-b border-gray-200/70 px-6 py-4 dark:border-gray-800/70">
-          <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">Tickets</h2>
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">Your Tickets</h2>
           <span className="text-[11px] font-medium text-gray-400 dark:text-gray-500">{loading ? 'Loading...' : `${tickets.length} items`}</span>
         </div>
         {error && <div className="px-6 py-3 text-sm text-red-600 dark:text-red-400">{error}</div>}
@@ -102,52 +79,28 @@ export default function AdminSupport(){
           {loading ? (
             <div className="px-6 py-8 text-sm text-gray-500 dark:text-gray-400">Loading…</div>
           ) : tickets.length === 0 ? (
-            <div className="px-6 py-8 text-sm text-gray-500 dark:text-gray-400">No tickets.</div>
+            <div className="px-6 py-8 text-sm text-gray-500 dark:text-gray-400">No tickets. <a href="/support" className="text-blue-600 hover:underline">Create one</a></div>
           ) : tickets.map(t => (
             <div key={t._id} className="px-6 py-5 hover:bg-gray-50/80 dark:hover:bg-gray-800/60">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex-1">
-                  <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">{t.name || '—'} <span className="text-gray-400">•</span> <span className="text-gray-600 dark:text-gray-300">{t.email}</span></div>
+                  <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">Ticket #{t._id.slice(-6)}</div>
                   <div className="mt-1 max-w-3xl whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-300">{t.message}</div>
-                  <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">{new Date(t.createdAt).toLocaleString()} • <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${t.status==='open' ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300'}`}>{t.status}</span></div>
+                  <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                    {new Date(t.createdAt).toLocaleString()} • 
+                    <span className={`ml-1 inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${t.status==='open' ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300'}`}>{t.status}</span>
+                    {t.replies && t.replies.length > 0 && (
+                      <span className="ml-2 text-blue-600 dark:text-blue-400">• {t.replies.length} {t.replies.length === 1 ? 'reply' : 'replies'}</span>
+                    )}
+                  </div>
                 </div>
                 <div className="flex gap-2">
                   <button onClick={()=> viewHistory(t._id)} className="rounded-lg bg-purple-600 px-3 py-1.5 text-xs font-semibold text-white shadow hover:bg-purple-700 dark:bg-purple-500 dark:hover:bg-purple-600">History</button>
                   {t.status==='open' && (
-                    <>
-                      <button onClick={()=> { setReplyingTo(t._id); setReplyText(''); setError(''); }} className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white shadow hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600">Reply</button>
-                      <button onClick={()=> markResolved(t._id)} className="rounded-lg bg-gray-900 px-3 py-1.5 text-xs font-semibold text-white shadow hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200">Mark resolved</button>
-                    </>
+                    <button onClick={()=> markResolved(t._id)} className="rounded-lg bg-gray-900 px-3 py-1.5 text-xs font-semibold text-white shadow hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200">Mark resolved</button>
                   )}
                 </div>
               </div>
-              {replyingTo === t._id && (
-                <div className="mt-4 rounded-lg border border-blue-200 bg-blue-50/50 p-4 dark:border-blue-800/50 dark:bg-blue-900/20">
-                  <label className="mb-2 block text-xs font-semibold text-gray-700 dark:text-gray-300">Reply to {t.name || t.email}</label>
-                  <textarea
-                    value={replyText}
-                    onChange={(e) => setReplyText(e.target.value)}
-                    placeholder="Type your reply here..."
-                    rows={4}
-                    className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
-                  />
-                  <div className="mt-3 flex gap-2">
-                    <button
-                      onClick={() => handleReply(t._id)}
-                      disabled={sending || !replyText.trim()}
-                      className="rounded-lg bg-blue-600 px-4 py-2 text-xs font-semibold text-white shadow hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-blue-500 dark:hover:bg-blue-600"
-                    >
-                      {sending ? 'Sending...' : 'Send Reply'}
-                    </button>
-                    <button
-                      onClick={() => { setReplyingTo(null); setReplyText(''); setError(''); }}
-                      className="rounded-lg bg-gray-200 px-4 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              )}
             </div>
           ))}
         </div>
@@ -171,8 +124,7 @@ export default function AdminSupport(){
                   {/* Original Message */}
                   <div className="rounded-lg border border-gray-200 bg-blue-50/50 p-4 dark:border-gray-700 dark:bg-blue-900/20">
                     <div className="mb-2 flex items-center gap-2">
-                      <span className="rounded-full bg-blue-600 px-2 py-0.5 text-[10px] font-semibold text-white">USER</span>
-                      <span className="text-xs font-semibold text-gray-900 dark:text-gray-100">{historyData.name || historyData.email}</span>
+                      <span className="rounded-full bg-blue-600 px-2 py-0.5 text-[10px] font-semibold text-white">YOU</span>
                       <span className="text-xs text-gray-500">•</span>
                       <span className="text-xs text-gray-500">{new Date(historyData.createdAt).toLocaleString()}</span>
                     </div>
@@ -184,7 +136,7 @@ export default function AdminSupport(){
                     historyData.replies.map((reply, idx) => (
                       <div key={idx} className={`rounded-lg border p-4 ${reply.sender === 'admin' ? 'border-green-200 bg-green-50/50 dark:border-green-800/50 dark:bg-green-900/20' : 'border-gray-200 bg-blue-50/50 dark:border-gray-700 dark:bg-blue-900/20'}`}>
                         <div className="mb-2 flex items-center gap-2">
-                          <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold text-white ${reply.sender === 'admin' ? 'bg-green-600' : 'bg-blue-600'}`}>{reply.sender.toUpperCase()}</span>
+                          <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold text-white ${reply.sender === 'admin' ? 'bg-green-600' : 'bg-blue-600'}`}>{reply.sender === 'admin' ? 'SUPPORT' : 'YOU'}</span>
                           <span className="text-xs text-gray-500">•</span>
                           <span className="text-xs text-gray-500">{new Date(reply.timestamp).toLocaleString()}</span>
                         </div>
@@ -192,7 +144,7 @@ export default function AdminSupport(){
                       </div>
                     ))
                   ) : (
-                    <div className="py-4 text-center text-sm text-gray-500">No replies yet</div>
+                    <div className="py-4 text-center text-sm text-gray-500">Waiting for support response...</div>
                   )}
                 </div>
               ) : null}

@@ -16,3 +16,13 @@ export async function resolveSupport(id) {
   const { data } = await api.patch(`/admin/support/${id}`, { status: 'resolved' });
   return data;
 }
+
+export async function replySupport(id, reply) {
+  const { data } = await api.post(`/admin/support/${id}/reply`, { reply });
+  return data;
+}
+
+export async function getSupportHistory(id) {
+  const { data } = await api.get(`/admin/support/${id}/history`);
+  return data;
+}

@@ -29,9 +29,14 @@ export const AuthProvider = ({ children }) => {
     setLoading(true); setError(null);
     try {
       const { data } = await api.post('/users/register', payload);
-      return data; // Expect message + instruct verification
+      return data; 
     } catch (e) {
-      setError(e.response?.data?.message || 'Registration failed');
+      if (e.response?.data?.errors && Array.isArray(e.response.data.errors)) {
+        const errorMessages = e.response.data.errors.map(err => err.msg).join('. ');
+        setError(errorMessages);
+      } else {
+        setError(e.response?.data?.message || 'Registration failed...');
+      }
       throw e;
     } finally { setLoading(false); }
   }, []);

@@ -20,7 +20,13 @@ const Register = () => {
       setSuccessMsg(message || 'Registration successful. Check your email to verify.');
       setTimeout(()=> navigate('/login'), 1800);
     } catch (e) {
-      setLocalError(e.response?.data?.message || 'Registration failed');
+      // Check for validation errors array from express-validator
+      if (e.response?.data?.errors && Array.isArray(e.response.data.errors)) {
+        const errorMessages = e.response.data.errors.map(err => err.msg).join('. ');
+        setLocalError(errorMessages);
+      } else {
+        setLocalError(e.response?.data?.message || 'Registration failed');
+      }
     }
   };
 
@@ -51,24 +57,24 @@ const Register = () => {
               <div className="grid gap-5 md:grid-cols-2">
                 <div className="space-y-2 md:col-span-2">
                   <Label htmlFor="name">Name</Label>
-                  <Input id="name" type="text" placeholder="Jane Doe" {...formRegister('name', { required: 'Name is required' })} />
+                  <Input id="name" type="text" placeholder="Enter you name" {...formRegister('name', { required: 'Name is required' })} />
                   {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
                 </div>
                 <div className="space-y-2 md:col-span-2">
                   <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" placeholder="you@example.com" {...formRegister('email', { required: 'Email is required', pattern: { value: /[^@\s]+@[^@\s]+\.[^@\s]+/, message: 'Invalid email' } })} />
+                  <Input id="email" type="email" placeholder="Enter your email id" {...formRegister('email', { required: 'Email is required', pattern: { value: /[^@\s]+@[^@\s]+\.[^@\s]+/, message: 'Invalid email' } })} />
                   {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="phone">Phone</Label>
-                  <Input id="phone" type="tel" placeholder="9912992923" {...formRegister('phone', { required: 'Phone is required', minLength: { value: 7, message: 'Too short' }, maxLength: { value: 15, message: 'Too long' }, pattern: { value: /^[0-9+\-() ]+$/, message: 'Invalid phone' } })} />
+                  <Input id="phone" type="tel" placeholder="Enter your Mobile number" {...formRegister('phone', { required: 'Phone is required', minLength: { value: 7, message: 'Too short' }, maxLength: { value: 15, message: 'Too long' }, pattern: { value: /^[0-9+\-() ]+$/, message: 'Invalid phone' } })} />
                   {errors.phone && <p className="text-xs text-destructive">{errors.phone.message}</p>}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="password">Password</Label>
-                  <Input id="password" type="password" placeholder="••••••••" {...formRegister('password', { required: 'Password is required', minLength: { value: 6, message: 'Min 6 characters' } })} />
+                  <Input id="password" type="password" placeholder="••••••••" {...formRegister('password', { required: 'Password is required', minLength: { value: 8, message: 'Min 8 characters' }, pattern: { value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, message: 'Must contain uppercase, lowercase, and number' } })} />
                   {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
-                  <p className="text-[10px] text-muted-foreground">Use at least 6 characters. Add numbers & symbols for stronger security.</p>
+                  <p className="text-[10px] text-muted-foreground">Use at least 8 characters with uppercase, lowercase, and a number.</p>
                 </div>
               </div>
               {(error || localError) && <p className="text-sm text-destructive">{error || localError}</p>}

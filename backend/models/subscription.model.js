@@ -40,6 +40,7 @@ const subscriptionSchema = new Schema(
 
     reminderDaysBefore: { type: Number, min: 0, max: 365, default: 3 },
     notifyChannels: { type: [String], enum: NOTIFY_CHANNELS, default: ['email'] },
+    lastReminderSent: { type: Date }, // Tracks when last reminder email was sent to prevent duplicates
 
     // category stores a slug (e.g., 'ott', 'gaming'); it's free-form to allow user-defined categories
     category: { type: String, trim: true, lowercase: true, default: 'other', maxlength: 60 },

@@ -13,13 +13,13 @@ import SupportTicket from '../models/supportTicket.model.js';
 dotenv.config();
 
 function getTransport() {
-  const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS } = process.env;
-  if (!SMTP_HOST || !SMTP_PORT || !SMTP_USER || !SMTP_PASS) return null;
+  const { MAIL_HOST, MAIL_PORT, MAIL_USER, MAIL_PASS } = process.env;
+  if (!MAIL_HOST || !MAIL_PORT || !MAIL_USER || !MAIL_PASS) return null;
   return nodemailer.createTransport({
-    host: SMTP_HOST,
-    port: Number(SMTP_PORT),
-    secure: Number(SMTP_PORT) === 465,
-    auth: { user: SMTP_USER, pass: SMTP_PASS },
+    host: MAIL_HOST,
+    port: Number(MAIL_PORT),
+    secure: Number(MAIL_PORT) === 465,
+    auth: { user: MAIL_USER, pass: MAIL_PASS },
   });
 }
 
@@ -39,7 +39,6 @@ export const registerUser = async (req, res) => {
     const exists = await UserModel.findOne({ email });
     if (exists) return res.status(409).json({ message: 'Email already in use' });
 
-    // Create verification token (store hashed; send raw)
     const rawToken = crypto.randomBytes(32).toString('hex');
     const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
 
@@ -64,14 +63,12 @@ export const registerUser = async (req, res) => {
         </div></body></html>`
       });
     } else {
-      // Fallback: log link for dev
       console.log('Verification link:', verifyLink);
     }
 
   const token = user.generateAuthToken();
   const extra = process.env.NODE_ENV === 'production' ? {} : { verifyToken: rawToken };
   res.status(201).json({ token, user, ...extra });
-  // Fire-and-forget admin notification
   notifyAdminNewUser(user).catch(() => {});
   } catch (err) {
     console.error(err);
@@ -162,7 +159,6 @@ export const loginUser = async (req, res) => {
 
 export const logoutUser = async (req, res) => {
   try {
-    // Extract current token
     const header = req.headers.authorization || '';
     const token = header.startsWith('Bearer ') ? header.slice(7) : null;
     if (!token) return res.status(400).json({ message: 'Token missing' });
@@ -216,5 +212,108 @@ export const sendSupportMessage = async (req, res) => {
   }
 };
 
-// export const UpdateUser = async (req, res) => {
-//     try {
+export const getUserSupportTickets = async (req, res) => {
+  try {
+    const authId = req.user?.id;
+    if (!authId) return res.status(401).json({ message: 'Unauthorized' });
+    
+    const { status } = req.query;
+    const filter = { userId: authId };
+    if (status) filter.status = status;
+    
+    const tickets = await SupportTicket.find(filter).sort({ createdAt: -1 });
+    res.json(tickets);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const getUserSupportTicketHistory = async (req, res) => {
+  try {
+    const authId = req.user?.id;
+    if (!authId) return res.status(401).json({ message: 'Unauthorized' });
+    
+    const { id } = req.params;
+    const ticket = await SupportTicket.findOne({ _id: id, userId: authId });
+    
+    if (!ticket) return res.status(404).json({ message: 'Ticket not found' });
+    res.json(ticket);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const resolveUserSupportTicket = async (req, res) => {
+  try {
+    const authId = req.user?.id;
+    if (!authId) return res.status(401).json({ message: 'Unauthorized' });
+    
+    const { id } = req.params;
+    const ticket = await SupportTicket.findOneAndUpdate(
+      { _id: id, userId: authId },
+      { $set: { status: 'resolved' } },
+      { new: true }
+    );
+    
+    if (!ticket) return res.status(404).json({ message: 'Ticket not found' });
+    res.json(ticket);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// Get notification preferences
+export const getNotificationPreferences = async (req, res) => {
+  try {
+    const authId = req.user?.id;
+    if (!authId) return res.status(401).json({ message: 'Unauthorized' });
+    
+    const user = await UserModel.findById(authId).select('notifications');
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    
+    res.json(user.notifications || {});
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// Update notification preferences
+export const updateNotificationPreferences = async (req, res) => {
+  try {
+    const authId = req.user?.id;
+    if (!authId) return res.status(401).json({ message: 'Unauthorized' });
+    
+    const { renewalReminders, spendingAlerts, reminderDaysBefore, spendingThreshold, currency } = req.body;
+    
+    const updateFields = {};
+    if (typeof renewalReminders === 'boolean') updateFields['notifications.renewalReminders'] = renewalReminders;
+    if (typeof spendingAlerts === 'boolean') updateFields['notifications.spendingAlerts'] = spendingAlerts;
+    if (typeof reminderDaysBefore === 'number' && reminderDaysBefore >= 1 && reminderDaysBefore <= 30) {
+      updateFields['notifications.reminderDaysBefore'] = reminderDaysBefore;
+    }
+    if (typeof spendingThreshold === 'number' && spendingThreshold >= 0) {
+      updateFields['notifications.spendingThreshold'] = spendingThreshold;
+    }
+    if (currency && typeof currency === 'string') {
+      updateFields['notifications.currency'] = currency.toUpperCase();
+    }
+    
+    const user = await UserModel.findByIdAndUpdate(
+      authId,
+      { $set: updateFields },
+      { new: true }
+    ).select('notifications');
+    
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    
+    res.json({ success: true, notifications: user.notifications });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
