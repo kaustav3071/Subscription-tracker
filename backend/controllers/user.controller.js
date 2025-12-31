@@ -54,7 +54,7 @@ export const registerUser = async (req, res) => {
     const transporter = getTransport();
     if (transporter) {
       const from = process.env.MAIL_FROM || 'no-reply@example.com';
-      await transporter.sendMail({
+      transporter.sendMail({
         from,
         to: user.email,
         subject: 'Verify your email',
@@ -67,14 +67,21 @@ export const registerUser = async (req, res) => {
         <p style="font-size:12px;color:#6b7280;">If the button does not work, copy and paste this link:<br/><span style="word-break:break-all;">${verifyLink}</span></p>
         <p style="font-size:12px;color:#9ca3af;margin-top:32px;">Subscription Tracker • If you didn’t create this account, ignore this email.</p>
         </div></body></html>`
+      }).catch(err => {
+        console.error('Failed to send verification email:', err.message);
       });
     } else {
-      console.log('Verification link:', verifyLink);
+      console.log('[Email Disabled] Verification link:', verifyLink);
     }
 
   const token = user.generateAuthToken();
   const extra = process.env.NODE_ENV === 'production' ? {} : { verifyToken: rawToken };
-  res.status(201).json({ token, user, ...extra });
+  res.status(201).json({ 
+    token, 
+    user, 
+    message: 'Registration successful! Please check your email to verify your account.',
+    ...extra 
+  });
   notifyAdminNewUser(user).catch(() => {});
   } catch (err) {
     console.error(err);
@@ -117,7 +124,7 @@ export const resendVerification = async (req, res) => {
     const transporter = getTransport();
     if (transporter) {
       const from = process.env.MAIL_FROM || 'no-reply@example.com';
-      await transporter.sendMail({
+      transporter.sendMail({
         from,
         to: user.email,
         subject: 'Verify your email (reminder)',
@@ -130,9 +137,11 @@ export const resendVerification = async (req, res) => {
         <p style="font-size:12px;color:#6b7280;">Link (copy if needed):<br/><span style="word-break:break-all;">${verifyLink}</span></p>
         <p style="font-size:12px;color:#9ca3af;margin-top:32px;">Subscription Tracker • If you didn’t request this, you can ignore it.</p>
         </div></body></html>`
+      }).catch(err => {
+        console.error('Failed to send verification email:', err.message);
       });
     } else {
-      console.log('Verification link:', verifyLink);
+      console.log('[Email Disabled] Verification link:', verifyLink);
     }
     res.json({ success: true });
   } catch (err) {
@@ -322,4 +331,5 @@ export const updateNotificationPreferences = async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
+
 
