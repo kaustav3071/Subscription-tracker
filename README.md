@@ -44,14 +44,14 @@ In today's subscription economy, the average person manages **20+ recurring char
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  📊 Unified Dashboard     │  🔔 Smart Notifications         │
-│  Real-time KPIs & Charts  │  Renewal & spend threshold     │
+│  📊 Unified Dashboard     │  🔔 Smart Notifications        │
+│  Real-time KPIs & Charts  │  Renewal & spend threshold      │
 ├─────────────────────────────────────────────────────────────┤
-│  💱 Currency Normalization │  🤖 Auto-Categorization        │
-│  All amounts → Base (INR)  │  AI-powered tagging            │
+│  💱 Currency Normalization │  🤖 Auto-Categorization       │
+│  All amounts → Base (INR)   │  AI-powered tagging           │
 ├─────────────────────────────────────────────────────────────┤
-│  📈 Annual Cost Insights   │  👑 Admin Control Panel        │
-│  See the real impact       │  Multi-user management         │
+│  📈 Annual Cost Insights   │  👑 Admin Control Panel       │
+│  See the real impact        │  Multi-user management        │
 └─────────────────────────────────────────────────────────────┘
 ```
 
