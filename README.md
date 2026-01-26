@@ -358,7 +358,7 @@ Aspiring Software Engineer | MERN Stack Developer
 
 - 📧 Email: [kaustavdas2027@gmail.com](mailto:kaustavdas2027@gmail.com)
 - 💼 GitHub: [@kaustav3071](https://github.com/kaustav3071)
-- 🔗 LinkedIn: [Connect with me](https://linkedin.com/in/kaustav3071)
+- 🔗 LinkedIn: [Connect with me](https://www.linkedin.com/in/kaustavdas1703/)
 
 ### Project Context
 This project was developed as a solo entry for the **Mind Sprint 48-Hour International Hackathon**, demonstrating rapid prototyping skills while maintaining code quality and production-readiness.
