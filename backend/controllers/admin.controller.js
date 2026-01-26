@@ -26,22 +26,22 @@ export async function updateUser(req, res) {
 
 export async function updateUserRole(req, res) {
   const { role } = req.body;
-  
+
 
   if (!role || !['user', 'admin'].includes(role)) {
     return res.status(400).json({ message: 'Invalid role. Must be "user" or "admin"' });
   }
-  
+
   if (req.user.id === req.params.id && role === 'user') {
     return res.status(403).json({ message: 'Cannot demote yourself from admin' });
   }
-  
+
   const user = await User.findByIdAndUpdate(
     req.params.id,
     { $set: { role } },
     { new: true, runValidators: true }
   );
-  
+
   if (!user) return res.status(404).json({ message: 'User not found' });
   res.json(user);
 }
@@ -98,32 +98,26 @@ export async function getSupportTicketHistory(req, res) {
 export async function replySupportTicket(req, res) {
   const { id } = req.params;
   const { reply } = req.body;
-  
+
   if (!reply || String(reply).trim().length === 0) {
     return res.status(400).json({ message: 'Reply message is required' });
   }
-  
+
   const ticket = await SupportTicket.findById(id);
   if (!ticket) return res.status(404).json({ message: 'Ticket not found' });
-  
-  const nodemailer = await import('nodemailer');
-  const { MAIL_HOST, MAIL_PORT, MAIL_USER, MAIL_PASS, MAIL_FROM } = process.env;
-  
-  if (!MAIL_HOST || !MAIL_PORT || !MAIL_USER || !MAIL_PASS) {
-    return res.status(500).json({ message: 'Email configuration is missing' });
+
+  const sgMail = (await import('@sendgrid/mail')).default;
+  const { SENDGRID_API_KEY, SENDER_EMAIL, MAIL_FROM } = process.env;
+
+  if (!SENDGRID_API_KEY) {
+    return res.status(500).json({ message: 'Email configuration is missing (SendGrid API key not set)' });
   }
-  
-  const transporter = nodemailer.default.createTransport({
-    host: MAIL_HOST,
-    port: Number(MAIL_PORT),
-    secure: Number(MAIL_PORT) === 465,
-    auth: { user: MAIL_USER, pass: MAIL_PASS },
-  });
-  
-  const from = MAIL_FROM
-  
+
+  sgMail.setApiKey(SENDGRID_API_KEY);
+  const from = SENDER_EMAIL || MAIL_FROM || 'no-reply@example.com';
+
   try {
-    await transporter.sendMail({
+    await sgMail.send({
       from,
       to: ticket.email,
       subject: `Re: Your Support Request - ${ticket.message.substring(0, 50)}...`,
@@ -150,10 +144,13 @@ export async function replySupportTicket(req, res) {
       timestamp: new Date()
     });
     await ticket.save();
-    
+
     res.json({ success: true, message: 'Reply sent successfully' });
   } catch (error) {
     console.error('Failed to send reply email:', error);
+    if (error.response) {
+      console.error('SendGrid response body:', error.response.body);
+    }
     res.status(500).json({ message: 'Failed to send email' });
   }
 }

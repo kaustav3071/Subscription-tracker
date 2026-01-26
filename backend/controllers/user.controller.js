@@ -1,7 +1,7 @@
 import UserModel from "../models/User.model.js";
 import { validationResult } from 'express-validator';
 import BlacklistToken from '../models/blacklistToken.model.js';
-import nodemailer from 'nodemailer';
+import sgMail from '@sendgrid/mail';
 import dotenv from 'dotenv';
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
@@ -12,15 +12,31 @@ import SupportTicket from '../models/supportTicket.model.js';
 
 dotenv.config();
 
-function getTransport() {
-  const { MAIL_HOST, MAIL_PORT, MAIL_USER, MAIL_PASS } = process.env;
-  if (!MAIL_HOST || !MAIL_PORT || !MAIL_USER || !MAIL_PASS) return null;
-  return nodemailer.createTransport({
-    host: MAIL_HOST,
-    port: Number(MAIL_PORT),
-    secure: Number(MAIL_PORT) === 465,
-    auth: { user: MAIL_USER, pass: MAIL_PASS },
-  });
+// Initialize SendGrid
+const { SENDGRID_API_KEY, SENDER_EMAIL } = process.env;
+if (SENDGRID_API_KEY) {
+  sgMail.setApiKey(SENDGRID_API_KEY);
+}
+
+async function sendEmailWithSendGrid({ to, subject, html }) {
+  const from = SENDER_EMAIL || process.env.MAIL_FROM || 'no-reply@example.com';
+
+  if (!SENDGRID_API_KEY) {
+    console.log('[Email Disabled] SendGrid API key not configured');
+    return false;
+  }
+
+  try {
+    await sgMail.send({ to, from, subject, html });
+    console.log('[SendGrid] Email sent successfully to:', to);
+    return true;
+  } catch (error) {
+    console.error('[SendGrid] Failed to send email:', error.message);
+    if (error.response) {
+      console.error('[SendGrid] Response body:', error.response.body);
+    }
+    return false;
+  }
 }
 
 function buildVerifyLink(token) {
@@ -41,48 +57,42 @@ export const registerUser = async (req, res) => {
 
     const rawToken = crypto.randomBytes(32).toString('hex');
     const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
-    const user = await UserModel.create({ 
-      email, 
-      password, 
-      name, 
-      phone, 
+    const user = await UserModel.create({
+      email,
+      password,
+      name,
+      phone,
       emailVerificationToken: tokenHash,
       role: 'user'
     });
 
     const verifyLink = buildVerifyLink(rawToken);
-    const transporter = getTransport();
-    if (transporter) {
-      const from = process.env.MAIL_FROM || 'no-reply@example.com';
-      transporter.sendMail({
-        from,
-        to: user.email,
-        subject: 'Verify your email',
-        html: `<!DOCTYPE html><html><body style="font-family:Arial,Helvetica,sans-serif;background:#f5f7fa;padding:0;margin:0;">
+    // Send verification email via SendGrid
+    sendEmailWithSendGrid({
+      to: user.email,
+      subject: 'Verify your email',
+      html: `<!DOCTYPE html><html><body style="font-family:Arial,Helvetica,sans-serif;background:#f5f7fa;padding:0;margin:0;">
         <div style="max-width:640px;margin:24px auto;background:#ffffff;padding:32px 40px;border-radius:12px;border:1px solid #e5e7eb;">
         <h1 style="margin:0 0 16px;font-size:22px;color:#111827;">Confirm your email</h1>
         <p style="line-height:1.5;font-size:14px;">Hi ${user.name || ''},</p>
         <p style="line-height:1.5;font-size:14px;">Thanks for signing up. Please confirm your email so we can activate your account.</p>
         <p style="margin:24px 0;"><a href="${verifyLink}" style="background:#2563eb;color:#fff;text-decoration:none;padding:12px 22px;border-radius:6px;font-weight:600;display:inline-block;">Verify Email</a></p>
         <p style="font-size:12px;color:#6b7280;">If the button does not work, copy and paste this link:<br/><span style="word-break:break-all;">${verifyLink}</span></p>
-        <p style="font-size:12px;color:#9ca3af;margin-top:32px;">Subscription Tracker • If you didn’t create this account, ignore this email.</p>
+        <p style="font-size:12px;color:#9ca3af;margin-top:32px;">Subscription Tracker • If you didn't create this account, ignore this email.</p>
         </div></body></html>`
-      }).catch(err => {
-        console.error('Failed to send verification email:', err.message);
-      });
-    } else {
-      console.log('[Email Disabled] Verification link:', verifyLink);
-    }
+    }).catch(err => {
+      console.error('Failed to send verification email:', err.message);
+    });
 
-  const token = user.generateAuthToken();
-  const extra = process.env.NODE_ENV === 'production' ? {} : { verifyToken: rawToken };
-  res.status(201).json({ 
-    token, 
-    user, 
-    message: 'Registration successful! Please check your email to verify your account.',
-    ...extra 
-  });
-  notifyAdminNewUser(user).catch(() => {});
+    const token = user.generateAuthToken();
+    const extra = process.env.NODE_ENV === 'production' ? {} : { verifyToken: rawToken };
+    res.status(201).json({
+      token,
+      user,
+      message: 'Registration successful! Please check your email to verify your account.',
+      ...extra
+    });
+    notifyAdminNewUser(user).catch(() => { });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Server error' });
@@ -98,10 +108,10 @@ export const verifyEmail = async (req, res) => {
     const user = await UserModel.findOne({ emailVerificationToken: tokenHash });
     if (!user) return res.status(400).json({ message: 'Invalid or expired token' });
 
-  user.isVerified = true;
-  user.emailVerificationToken = undefined;
-  await user.save();
-  res.json({ success: true });
+    user.isVerified = true;
+    user.emailVerificationToken = undefined;
+    await user.save();
+    res.json({ success: true });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Server error' });
@@ -121,28 +131,22 @@ export const resendVerification = async (req, res) => {
     await user.save();
 
     const verifyLink = buildVerifyLink(rawToken);
-    const transporter = getTransport();
-    if (transporter) {
-      const from = process.env.MAIL_FROM || 'no-reply@example.com';
-      transporter.sendMail({
-        from,
-        to: user.email,
-        subject: 'Verify your email (reminder)',
-        html: `<!DOCTYPE html><html><body style="font-family:Arial,Helvetica,sans-serif;background:#f5f7fa;padding:0;margin:0;">
+    // Send verification email via SendGrid
+    sendEmailWithSendGrid({
+      to: user.email,
+      subject: 'Verify your email (reminder)',
+      html: `<!DOCTYPE html><html><body style="font-family:Arial,Helvetica,sans-serif;background:#f5f7fa;padding:0;margin:0;">
         <div style="max-width:640px;margin:24px auto;background:#ffffff;padding:32px 40px;border-radius:12px;border:1px solid #e5e7eb;">
         <h1 style="margin:0 0 16px;font-size:22px;color:#111827;">Just one more step</h1>
         <p style="line-height:1.5;font-size:14px;">Hi ${user.name || ''},</p>
         <p style="line-height:1.5;font-size:14px;">Please verify your email to finish activating your account.</p>
         <p style="margin:24px 0;"><a href="${verifyLink}" style="background:#2563eb;color:#fff;text-decoration:none;padding:12px 22px;border-radius:6px;font-weight:600;display:inline-block;">Verify Email</a></p>
         <p style="font-size:12px;color:#6b7280;">Link (copy if needed):<br/><span style="word-break:break-all;">${verifyLink}</span></p>
-        <p style="font-size:12px;color:#9ca3af;margin-top:32px;">Subscription Tracker • If you didn’t request this, you can ignore it.</p>
+        <p style="font-size:12px;color:#9ca3af;margin-top:32px;">Subscription Tracker • If you didn't request this, you can ignore it.</p>
         </div></body></html>`
-      }).catch(err => {
-        console.error('Failed to send verification email:', err.message);
-      });
-    } else {
-      console.log('[Email Disabled] Verification link:', verifyLink);
-    }
+    }).catch(err => {
+      console.error('Failed to send verification email:', err.message);
+    });
     res.json({ success: true });
   } catch (err) {
     console.error(err);
@@ -219,7 +223,7 @@ export const sendSupportMessage = async (req, res) => {
     // persist ticket
     const ticket = await SupportTicket.create({ userId: user._id, name: user.name || '', email: user.email, message: msg });
     // email admin (best-effort)
-    await notifyAdminSupportMessage(user, msg).catch(()=>{});
+    await notifyAdminSupportMessage(user, msg).catch(() => { });
     res.json({ success: true, ticketId: ticket._id });
   } catch (err) {
     console.error(err);
@@ -231,11 +235,11 @@ export const getUserSupportTickets = async (req, res) => {
   try {
     const authId = req.user?.id;
     if (!authId) return res.status(401).json({ message: 'Unauthorized' });
-    
+
     const { status } = req.query;
     const filter = { userId: authId };
     if (status) filter.status = status;
-    
+
     const tickets = await SupportTicket.find(filter).sort({ createdAt: -1 });
     res.json(tickets);
   } catch (err) {
@@ -248,10 +252,10 @@ export const getUserSupportTicketHistory = async (req, res) => {
   try {
     const authId = req.user?.id;
     if (!authId) return res.status(401).json({ message: 'Unauthorized' });
-    
+
     const { id } = req.params;
     const ticket = await SupportTicket.findOne({ _id: id, userId: authId });
-    
+
     if (!ticket) return res.status(404).json({ message: 'Ticket not found' });
     res.json(ticket);
   } catch (err) {
@@ -264,14 +268,14 @@ export const resolveUserSupportTicket = async (req, res) => {
   try {
     const authId = req.user?.id;
     if (!authId) return res.status(401).json({ message: 'Unauthorized' });
-    
+
     const { id } = req.params;
     const ticket = await SupportTicket.findOneAndUpdate(
       { _id: id, userId: authId },
       { $set: { status: 'resolved' } },
       { new: true }
     );
-    
+
     if (!ticket) return res.status(404).json({ message: 'Ticket not found' });
     res.json(ticket);
   } catch (err) {
@@ -285,10 +289,10 @@ export const getNotificationPreferences = async (req, res) => {
   try {
     const authId = req.user?.id;
     if (!authId) return res.status(401).json({ message: 'Unauthorized' });
-    
+
     const user = await UserModel.findById(authId).select('notifications');
     if (!user) return res.status(404).json({ message: 'User not found' });
-    
+
     res.json(user.notifications || {});
   } catch (err) {
     console.error(err);
@@ -301,9 +305,9 @@ export const updateNotificationPreferences = async (req, res) => {
   try {
     const authId = req.user?.id;
     if (!authId) return res.status(401).json({ message: 'Unauthorized' });
-    
+
     const { renewalReminders, spendingAlerts, reminderDaysBefore, spendingThreshold, currency } = req.body;
-    
+
     const updateFields = {};
     if (typeof renewalReminders === 'boolean') updateFields['notifications.renewalReminders'] = renewalReminders;
     if (typeof spendingAlerts === 'boolean') updateFields['notifications.spendingAlerts'] = spendingAlerts;
@@ -316,15 +320,15 @@ export const updateNotificationPreferences = async (req, res) => {
     if (currency && typeof currency === 'string') {
       updateFields['notifications.currency'] = currency.toUpperCase();
     }
-    
+
     const user = await UserModel.findByIdAndUpdate(
       authId,
       { $set: updateFields },
       { new: true }
     ).select('notifications');
-    
+
     if (!user) return res.status(404).json({ message: 'User not found' });
-    
+
     res.json({ success: true, notifications: user.notifications });
   } catch (err) {
     console.error(err);

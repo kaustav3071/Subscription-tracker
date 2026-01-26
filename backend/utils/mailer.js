@@ -1,23 +1,35 @@
-import nodemailer from 'nodemailer';
-
-export function getTransport() {
-  const { MAIL_HOST, MAIL_PORT, MAIL_USER, MAIL_PASS } = process.env;
-  if (!MAIL_HOST || !MAIL_PORT || !MAIL_USER || !MAIL_PASS) return null;
-  return nodemailer.createTransport({
-    host: MAIL_HOST,
-    port: Number(MAIL_PORT),
-    secure: Number(MAIL_PORT) === 465,
-    auth: { user: MAIL_USER, pass: MAIL_PASS },
-  });
-}
+import sgMail from '@sendgrid/mail';
 
 export async function sendMail({ to, subject, html, text }) {
-  const transporter = getTransport();
-  const from = process.env.MAIL_FROM || 'no-reply@example.com';
-  if (!transporter) {
-    console.log('[mailer.disabled]', { to, subject });
+  // Read environment variables inside the function to ensure dotenv has loaded them
+  const { SENDGRID_API_KEY, SENDER_EMAIL, MAIL_FROM } = process.env;
+  const from = SENDER_EMAIL || MAIL_FROM || 'no-reply@example.com';
+
+  if (!SENDGRID_API_KEY) {
+    console.log('[mailer.disabled] SendGrid API key not configured', { to, subject });
     return false;
   }
-  await transporter.sendMail({ from, to, subject, html, text });
-  return true;
+
+  // Set API key each time to ensure it's configured
+  sgMail.setApiKey(SENDGRID_API_KEY);
+
+  try {
+    const msg = {
+      to,
+      from,
+      subject,
+      ...(html && { html }),
+      ...(text && { text }),
+    };
+
+    await sgMail.send(msg);
+    console.log('[mailer] Email sent successfully to:', to);
+    return true;
+  } catch (error) {
+    console.error('[mailer] SendGrid error:', error.message);
+    if (error.response) {
+      console.error('[mailer] SendGrid response body:', error.response.body);
+    }
+    return false;
+  }
 }
